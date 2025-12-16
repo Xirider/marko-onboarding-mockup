@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { 
-  Hash, ChevronDown, Plus, MessageSquare, 
+  Hash, ChevronDown, Plus, 
   Search, MoreHorizontal, Smile, AtSign, Paperclip, Send,
   Bot, CheckCircle2, ExternalLink, ArrowLeft
 } from "lucide-react"
@@ -309,31 +309,6 @@ export function SlackSimulator() {
         }])
       }, TYPING_DELAY + 300)
     }, 300)
-  }
-
-  const simulateIntegrationConnected = (integration: string) => {
-    if (!connectedIntegrations.includes(integration)) {
-      const newConnected = [...connectedIntegrations, integration]
-      setConnectedIntegrations(newConnected)
-      
-      const friendlyName = integration === "meta" ? "Meta Ads" : integration === "hubspot" ? "HubSpot" : "Customer.io"
-      
-      setTimeout(() => {
-        setIsTyping(true)
-        setTimeout(() => {
-          setIsTyping(false)
-          const updatedMsg = getUpdatedIntegrationMessage(newConnected)
-          setMessages(prev => {
-            const newMsgs = prev.filter(m => !m.blocks?.some(b => b.type === "actions"))
-            return [...newMsgs, {
-              ...updatedMsg,
-              id: `marko-update-${Date.now()}`,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }]
-          })
-        }, TYPING_DELAY)
-      }, 500)
-    }
   }
 
   const sendUserMessage = (text: string) => {
