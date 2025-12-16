@@ -39,18 +39,28 @@ export function SlackSimulator() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isOnboardingFlow = searchParams.get("flow") === "onboarding"
-  const connectedFromUrl = searchParams.get("connected")?.split(",").filter(Boolean) || []
+  const connectedParam = searchParams.get("connected")
+  const connectedFromUrl = connectedParam?.split(",").filter(Boolean) || []
   
   const [messages, setMessages] = useState<Message[]>([])
   const [currentStep, setCurrentStep] = useState(0)
   const [isTyping, setIsTyping] = useState(false)
-  const [connectedIntegrations, setConnectedIntegrations] = useState<string[]>(
-    isOnboardingFlow ? ["meta", "hubspot", "customerio"] : connectedFromUrl
-  )
-  const [hasShownReturnMessage, setHasShownReturnMessage] = useState(false)
+  const [connectedIntegrations, setConnectedIntegrations] = useState<string[]>([])
   const [selectedDomains, setSelectedDomains] = useState<string[]>([])
   const [domainsConfirmed, setDomainsConfirmed] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const hasProcessedReturn = useRef(false)
+
+  // Initialize connected integrations from URL or onboarding flow
+  useEffect(() => {
+    if (isOnboardingFlow) {
+      setConnectedIntegrations(["meta", "hubspot", "customerio"])
+    } else if (connectedFromUrl.length > 0) {
+      setConnectedIntegrations(connectedFromUrl)
+    }
+  }, [isOnboardingFlow, connectedParam])
+
+  const isReturningWithConnections = connectedFromUrl.length > 0
 
   const getInitialMessages = (): Omit<Message, "id" | "timestamp">[] => {
     if (isOnboardingFlow) {
@@ -76,6 +86,10 @@ export function SlackSimulator() {
           ]
         },
       ]
+    }
+
+    if (isReturningWithConnections) {
+      return []
     }
     
     return [
@@ -106,7 +120,8 @@ export function SlackSimulator() {
   const messageSequence = getInitialMessages()
 
   const getUpdatedIntegrationMessage = (currentConnected: string[]): Omit<Message, "id" | "timestamp"> => {
-    const remaining = ["meta", "hubspot", "customerio"].filter(i => !currentConnected.includes(i))
+    const coreIntegrations = ["meta", "hubspot", "customerio"]
+    const remaining = coreIntegrations.filter(i => !currentConnected.includes(i))
     const elements: SlackBlock["elements"] = []
     
     if (!currentConnected.includes("meta")) {
@@ -119,10 +134,13 @@ export function SlackSimulator() {
       elements.push({ type: "button", text: "📧 Connect Customer.io", action: "connect_customerio", url: "/app/integrations" })
     }
 
-    if (remaining.length === 0) {
+    const hasAnyConnection = currentConnected.length > 0
+    const allCoreConnected = remaining.length === 0
+
+    if (allCoreConnected || (hasAnyConnection && elements.length === 0)) {
       return {
         sender: "marko",
-        content: "✅ All integrations connected! Now, which areas would you like me to focus on?",
+        content: "✅ Great job! Your integrations are connected. Now, which areas would you like me to focus on?",
         blocks: [
           { type: "divider" },
           { 
@@ -140,7 +158,9 @@ export function SlackSimulator() {
 
     return {
       sender: "marko",
-      content: `Great! ${currentConnected.length} integration(s) connected. ${remaining.length > 0 ? `You can still connect more:` : ""}`,
+      content: hasAnyConnection 
+        ? `Great! ${currentConnected.length} integration(s) connected. ${elements.length > 0 ? "You can also connect these:" : ""}`
+        : "Connect your marketing tools to get started:",
       blocks: elements.length > 0 ? [
         { type: "actions", elements },
         { type: "context", text: "↗️ Opens app.marko.ai — Sign in with Slack required" },
@@ -174,11 +194,25 @@ export function SlackSimulator() {
 
   // Handle returning from integrations page with connected integrations
   useEffect(() => {
-    if (connectedFromUrl.length > 0 && !hasShownReturnMessage && messages.length > 0) {
-      setHasShownReturnMessage(true)
+    if (connectedFromUrl.length > 0 && !hasProcessedReturn.current) {
+      hasProcessedReturn.current = true
+      
+      const INTEGRATION_NAMES: Record<string, string> = {
+        meta: "Meta Ads",
+        hubspot: "HubSpot", 
+        customerio: "Customer.io",
+        "google-ads": "Google Ads",
+        linkedin: "LinkedIn Ads",
+        mailchimp: "Mailchimp",
+        analytics: "Google Analytics",
+        stripe: "Stripe",
+        notion: "Notion",
+        moz: "Moz",
+        github: "GitHub"
+      }
       
       const friendlyNames = connectedFromUrl.map(id => 
-        id === "meta" ? "Meta Ads" : id === "hubspot" ? "HubSpot" : id === "customerio" ? "Customer.io" : id
+        INTEGRATION_NAMES[id] || id.charAt(0).toUpperCase() + id.slice(1).replace(/-/g, " ")
       ).join(", ")
 
       // Add user message showing they connected
@@ -195,21 +229,16 @@ export function SlackSimulator() {
         setTimeout(() => {
           setIsTyping(false)
           const updatedMsg = getUpdatedIntegrationMessage(connectedFromUrl)
-          setMessages(prev => {
-            // Remove old integration message with buttons
-            const filtered = prev.filter(m => !m.blocks?.some(b => 
-              b.type === "actions" && b.elements?.some(e => e.action?.startsWith("connect_"))
-            ))
-            return [...filtered, {
-              ...updatedMsg,
-              id: `marko-return-${Date.now()}`,
-              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }]
-          })
+          setMessages(prev => [...prev, {
+            ...updatedMsg,
+            id: `marko-return-${Date.now()}`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }])
         }, TYPING_DELAY)
       }, 500)
     }
-  }, [connectedFromUrl, hasShownReturnMessage, messages.length])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectedParam])
 
   const handleButtonClick = (action: string) => {
     if (action === "open_billing") {

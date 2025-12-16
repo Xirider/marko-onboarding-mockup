@@ -33,6 +33,7 @@ export function Integrations() {
   
   const connectParam = searchParams.get("connect")
   const connectedParam = searchParams.get("connected")
+  const integrationParam = searchParams.get("integration") // Coming from Slack flow
   const returnTo = searchParams.get("returnTo")
   const flowParam = searchParams.get("flow")
   const isFromSlack = returnTo === "slack" || flowParam === "slack"
@@ -55,6 +56,18 @@ export function Integrations() {
       setJustConnected(connectedParam)
     }
   }, [connectParam, connectedParam])
+
+  // Auto-trigger OAuth flow for integration specified in URL (coming from Slack)
+  useEffect(() => {
+    if (integrationParam && isFromSlack) {
+      const integration = integrations.find(i => i.id === integrationParam)
+      if (integration && !integration.connected) {
+        // Automatically start the OAuth flow for this integration
+        const returnPath = `/app/integrations?returnTo=slack&flow=slack`
+        navigate(`/oauth/integration?id=${integrationParam}&returnTo=${encodeURIComponent(returnPath)}`, { replace: true })
+      }
+    }
+  }, [integrationParam, isFromSlack])
 
   const handleConnect = (id: string) => {
     const integration = integrations.find(i => i.id === id)
