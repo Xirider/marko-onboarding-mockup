@@ -99,16 +99,13 @@ export function SlackSimulator() {
       },
       {
         sender: "marko",
-        content: "Before I can start helping you with campaigns, I'll need access to your marketing tools. Click a button below to open our app and connect your integrations (you'll sign in with Slack for security).",
+        content: "Before I can start helping you with campaigns, I'll need access to your marketing tools. Click the button below to open our app and connect your integrations (you'll sign in with Slack for security).",
         blocks: [
           { type: "divider" },
-          { type: "section", text: "Connect your integrations:" },
           { 
             type: "actions", 
             elements: [
-              { type: "button", text: "📊 Connect Meta Ads", style: "primary", action: "connect_meta", url: "/app/integrations" },
-              { type: "button", text: "🧡 Connect HubSpot", action: "connect_hubspot", url: "/app/integrations" },
-              { type: "button", text: "📧 Connect Customer.io", action: "connect_customerio", url: "/app/integrations" },
+              { type: "button", text: "🔗 Connect Integrations", style: "primary", action: "open_integrations", url: "/app/integrations" },
             ]
           },
           { type: "context", text: "↗️ Opens app.marko.ai — Sign in with Slack required" },
@@ -120,27 +117,12 @@ export function SlackSimulator() {
   const messageSequence = getInitialMessages()
 
   const getUpdatedIntegrationMessage = (currentConnected: string[]): Omit<Message, "id" | "timestamp"> => {
-    const coreIntegrations = ["meta", "hubspot", "customerio"]
-    const remaining = coreIntegrations.filter(i => !currentConnected.includes(i))
-    const elements: SlackBlock["elements"] = []
-    
-    if (!currentConnected.includes("meta")) {
-      elements.push({ type: "button", text: "📊 Connect Meta Ads", style: "primary", action: "connect_meta", url: "/app/integrations" })
-    }
-    if (!currentConnected.includes("hubspot")) {
-      elements.push({ type: "button", text: "🧡 Connect HubSpot", action: "connect_hubspot", url: "/app/integrations" })
-    }
-    if (!currentConnected.includes("customerio")) {
-      elements.push({ type: "button", text: "📧 Connect Customer.io", action: "connect_customerio", url: "/app/integrations" })
-    }
-
     const hasAnyConnection = currentConnected.length > 0
-    const allCoreConnected = remaining.length === 0
 
-    if (allCoreConnected || (hasAnyConnection && elements.length === 0)) {
+    if (hasAnyConnection && currentConnected.length >= 1) {
       return {
         sender: "marko",
-        content: "✅ Great job! Your integrations are connected. Now, which areas would you like me to focus on?",
+        content: `✅ Great job! ${currentConnected.length} integration${currentConnected.length > 1 ? 's' : ''} connected. Now, which areas would you like me to focus on?`,
         blocks: [
           { type: "divider" },
           { 
@@ -158,13 +140,16 @@ export function SlackSimulator() {
 
     return {
       sender: "marko",
-      content: hasAnyConnection 
-        ? `Great! ${currentConnected.length} integration(s) connected. ${elements.length > 0 ? "You can also connect these:" : ""}`
-        : "Connect your marketing tools to get started:",
-      blocks: elements.length > 0 ? [
-        { type: "actions", elements },
+      content: "Connect your marketing tools to get started:",
+      blocks: [
+        { 
+          type: "actions", 
+          elements: [
+            { type: "button", text: "🔗 Connect Integrations", style: "primary", action: "open_integrations", url: "/app/integrations" },
+          ]
+        },
         { type: "context", text: "↗️ Opens app.marko.ai — Sign in with Slack required" },
-      ] : undefined
+      ]
     }
   }
 
@@ -261,14 +246,9 @@ export function SlackSimulator() {
       return
     }
 
-    let integration = ""
-    if (action === "connect_meta") integration = "meta"
-    if (action === "connect_hubspot") integration = "hubspot"
-    if (action === "connect_customerio") integration = "customerio"
-
-    if (integration && !connectedIntegrations.includes(integration)) {
-      // Navigate directly to sign-in with Slack, then to integrations
-      navigate(`/auth/signin?integration=${integration}&flow=slack`)
+    if (action === "open_integrations") {
+      navigate(`/auth/signin?flow=slack`)
+      return
     }
   }
 

@@ -14,15 +14,39 @@ type Integration = {
   connected: boolean
 }
 
+type CategoryConfig = {
+  id: string
+  name: string
+  emoji: string
+  description: string
+}
+
+const CATEGORIES: CategoryConfig[] = [
+  { id: "paid_ads", name: "Paid Ads", emoji: "📊", description: "Advertising platforms and campaign management" },
+  { id: "analytics", name: "Analytics", emoji: "📈", description: "Traffic, conversions, and performance tracking" },
+  { id: "email", name: "Email Marketing", emoji: "📧", description: "Email campaigns, automation, and newsletters" },
+  { id: "crm", name: "CRM", emoji: "🧡", description: "Customer relationship management" },
+  { id: "seo", name: "SEO", emoji: "🔍", description: "Search engine optimization tools" },
+  { id: "other", name: "Other Tools", emoji: "🔧", description: "Productivity and developer tools" },
+]
+
 const initialIntegrations: Integration[] = [
-  { id: "meta", name: "Meta Ads", description: "Facebook & Instagram advertising", icon: "📊", category: "Ads", connected: false },
-  { id: "google-ads", name: "Google Ads", description: "Search & display advertising", icon: "🔍", category: "Ads", connected: false },
-  { id: "hubspot", name: "HubSpot", description: "CRM & marketing automation", icon: "🧡", category: "CRM", connected: false },
-  { id: "notion", name: "Notion", description: "Docs & knowledge base", icon: "📝", category: "Productivity", connected: false },
-  { id: "customerio", name: "Customer.io", description: "Email campaigns & automation", icon: "📧", category: "Email", connected: false },
-  { id: "stripe", name: "Stripe", description: "Payments & subscriptions", icon: "💳", category: "Payments", connected: false },
-  { id: "moz", name: "Moz", description: "SEO analytics & research", icon: "📈", category: "SEO", connected: false },
-  { id: "github", name: "GitHub", description: "Code & issue tracking", icon: "🐙", category: "Dev", connected: false },
+  { id: "meta", name: "Meta Ads", description: "Facebook & Instagram advertising", icon: "📊", category: "paid_ads", connected: false },
+  { id: "google-ads", name: "Google Ads", description: "Search & display advertising", icon: "🔍", category: "paid_ads", connected: false },
+  { id: "linkedin", name: "LinkedIn Ads", description: "B2B advertising platform", icon: "💼", category: "paid_ads", connected: false },
+  { id: "tiktok", name: "TikTok Ads", description: "Short-form video advertising", icon: "🎵", category: "paid_ads", connected: false },
+  { id: "analytics", name: "Google Analytics", description: "Website traffic & user behavior", icon: "📈", category: "analytics", connected: false },
+  { id: "mixpanel", name: "Mixpanel", description: "Product analytics & user tracking", icon: "🔬", category: "analytics", connected: false },
+  { id: "customerio", name: "Customer.io", description: "Email campaigns & automation", icon: "📧", category: "email", connected: false },
+  { id: "mailchimp", name: "Mailchimp", description: "Email marketing & newsletters", icon: "🐵", category: "email", connected: false },
+  { id: "klaviyo", name: "Klaviyo", description: "Ecommerce email & SMS", icon: "💌", category: "email", connected: false },
+  { id: "hubspot", name: "HubSpot", description: "CRM & marketing automation", icon: "🧡", category: "crm", connected: false },
+  { id: "salesforce", name: "Salesforce", description: "Enterprise CRM platform", icon: "☁️", category: "crm", connected: false },
+  { id: "moz", name: "Moz", description: "SEO analytics & research", icon: "📈", category: "seo", connected: false },
+  { id: "semrush", name: "Semrush", description: "SEO & competitive analysis", icon: "🔎", category: "seo", connected: false },
+  { id: "ahrefs", name: "Ahrefs", description: "Backlinks & keyword research", icon: "🔗", category: "seo", connected: false },
+  { id: "notion", name: "Notion", description: "Docs & knowledge base", icon: "📝", category: "other", connected: false },
+  { id: "stripe", name: "Stripe", description: "Payments & subscriptions", icon: "💳", category: "other", connected: false },
 ]
 
 export function Integrations() {
@@ -33,7 +57,6 @@ export function Integrations() {
   
   const connectParam = searchParams.get("connect")
   const connectedParam = searchParams.get("connected")
-  const integrationParam = searchParams.get("integration") // Coming from Slack flow
   const returnTo = searchParams.get("returnTo")
   const flowParam = searchParams.get("flow")
   const isFromSlack = returnTo === "slack" || flowParam === "slack"
@@ -41,14 +64,12 @@ export function Integrations() {
   const connectedCount = integrations.filter(i => i.connected).length
 
   useEffect(() => {
-    // Handle legacy connect param
     if (connectParam) {
       setIntegrations(prev => prev.map(i => 
         i.id === connectParam ? { ...i, connected: true } : i
       ))
       setJustConnected(connectParam)
     }
-    // Handle OAuth callback with connected param
     if (connectedParam) {
       setIntegrations(prev => prev.map(i => 
         i.id === connectedParam ? { ...i, connected: true } : i
@@ -56,18 +77,6 @@ export function Integrations() {
       setJustConnected(connectedParam)
     }
   }, [connectParam, connectedParam])
-
-  // Auto-trigger OAuth flow for integration specified in URL (coming from Slack)
-  useEffect(() => {
-    if (integrationParam && isFromSlack) {
-      const integration = integrations.find(i => i.id === integrationParam)
-      if (integration && !integration.connected) {
-        // Automatically start the OAuth flow for this integration
-        const returnPath = `/app/integrations?returnTo=slack&flow=slack`
-        navigate(`/oauth/integration?id=${integrationParam}&returnTo=${encodeURIComponent(returnPath)}`, { replace: true })
-      }
-    }
-  }, [integrationParam, isFromSlack])
 
   const handleConnect = (id: string) => {
     const integration = integrations.find(i => i.id === id)
@@ -147,9 +156,9 @@ export function Integrations() {
                   <MessageSquare className="w-3 h-3 mr-1" />
                   From Slack
                 </Badge>
-                <h1 className="text-3xl font-bold text-white mb-3">Connect Integration</h1>
+                <h1 className="text-3xl font-bold text-white mb-3">Connect Your Integrations</h1>
                 <p className="text-zinc-400 max-w-lg mx-auto">
-                  Connect your integration below, then return to Slack to continue chatting with Marko.
+                  Connect your marketing tools below, then return to Slack to continue chatting with Marko.
                 </p>
               </>
             ) : (
@@ -204,53 +213,69 @@ export function Integrations() {
             </div>
           )}
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            {integrations.map((integration) => (
-              <Card 
-                key={integration.id} 
-                className={`bg-zinc-900/50 border-zinc-800 backdrop-blur transition-all ${
-                  integration.connected ? "ring-1 ring-cyan-500/50" : ""
-                }`}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-xl">
-                        {integration.icon}
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-white">{integration.name}</h3>
-                        <p className="text-xs text-zinc-500">{integration.description}</p>
-                      </div>
+          <div className="space-y-8">
+            {CATEGORIES.map((category) => {
+              const categoryIntegrations = integrations.filter(i => i.category === category.id)
+              if (categoryIntegrations.length === 0) return null
+              
+              return (
+                <div key={category.id}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">{category.emoji}</span>
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">{category.name}</h2>
+                      <p className="text-sm text-zinc-500">{category.description}</p>
                     </div>
-                    <Badge variant="secondary" className="bg-zinc-800 text-zinc-400 text-xs">
-                      {integration.category}
-                    </Badge>
                   </div>
                   
-                  {integration.connected ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => toggleIntegration(integration.id)}
-                      className="w-full border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
-                    >
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Connected
-                    </Button>
-                  ) : (
-                    <Button 
-                      size="sm"
-                      onClick={() => toggleIntegration(integration.id)}
-                      className="w-full bg-zinc-800 hover:bg-zinc-700 text-white"
-                    >
-                      Connect
-                      <ExternalLink className="w-3 h-3 ml-2" />
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {categoryIntegrations.map((integration) => (
+                      <Card 
+                        key={integration.id} 
+                        className={`bg-zinc-900/50 border-zinc-800 backdrop-blur transition-all ${
+                          integration.connected ? "ring-1 ring-cyan-500/50" : ""
+                        }`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-xl">
+                                {integration.icon}
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-white text-sm">{integration.name}</h3>
+                                <p className="text-xs text-zinc-500">{integration.description}</p>
+                              </div>
+                            </div>
+                            
+                            {integration.connected ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => toggleIntegration(integration.id)}
+                                className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 shrink-0"
+                              >
+                                <CheckCircle2 className="w-4 h-4 mr-1" />
+                                Connected
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm"
+                                onClick={() => toggleIntegration(integration.id)}
+                                className="bg-zinc-800 hover:bg-zinc-700 text-white shrink-0"
+                              >
+                                Connect
+                                <ExternalLink className="w-3 h-3 ml-1" />
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           <div className="mt-8 text-center">

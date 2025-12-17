@@ -6,21 +6,13 @@ import { Bot, ArrowLeft, CheckCircle2, MessageSquare } from "lucide-react"
 export function SignInWithSlack() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const integration = searchParams.get("integration")
   const flow = searchParams.get("flow")
   const isFromSlack = flow === "slack"
 
-  const integrationName = integration === "meta" ? "Meta Ads" 
-    : integration === "hubspot" ? "HubSpot" 
-    : integration === "customerio" ? "Customer.io" 
-    : null
-
   const handleSignIn = () => {
-    if (isFromSlack && integration) {
-      // Go through OAuth flow, then to integrations
-      navigate(`/oauth/slack?redirect=/app/integrations&integration=${integration}&flow=slack`)
+    if (isFromSlack) {
+      navigate(`/oauth/slack?redirect=/app/integrations&flow=slack`)
     } else {
-      // Go through OAuth flow, then to add bot
       navigate("/oauth/slack?redirect=/auth/add-bot")
     }
   }
@@ -38,13 +30,13 @@ export function SignInWithSlack() {
           {isFromSlack ? "Back to Slack" : "Back to home"}
         </Link>
 
-        {isFromSlack && integrationName && (
+        {isFromSlack && (
           <div className="mb-6 p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
             <div className="flex items-center gap-3">
               <MessageSquare className="w-5 h-5 text-purple-400" />
               <div>
                 <p className="text-sm font-medium text-purple-300">Coming from Slack</p>
-                <p className="text-xs text-purple-400/70">Sign in to connect {integrationName}</p>
+                <p className="text-xs text-purple-400/70">Sign in to connect your integrations</p>
               </div>
             </div>
           </div>
@@ -58,7 +50,7 @@ export function SignInWithSlack() {
             <CardTitle className="text-2xl text-white">Sign in with Slack</CardTitle>
             <CardDescription className="text-zinc-400">
               {isFromSlack 
-                ? "Verify your identity to connect integrations securely"
+                ? "Verify your identity to connect your marketing tools"
                 : "Connect your Slack account to get started with Marko"
               }
             </CardDescription>
